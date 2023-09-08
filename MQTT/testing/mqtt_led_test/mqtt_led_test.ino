@@ -1,14 +1,16 @@
 #include "WiFiS3.h"
+#include "Arduino_LED_Matrix.h"
 #include <ArduinoMqttClient.h>
 
 char ssid[] = "xxx";    // your network SSID (name)
-char pass[] = "yyy";    // your network password 
+char pass[] = "yyy";      // your network password
 
 char mqtt_user[] = "admin";
 char mqtt_pass[] = "pass";
 
 
 WiFiClient wifiClient;
+ArduinoLEDMatrix matrix;
 MqttClient mqttClient(wifiClient);
 
 const char broker[] = "192.168.1.22"; //IP address of the EMQX broker.
@@ -19,6 +21,28 @@ const char subscribe_topic[]  = "Led";
 #define pinLed 4
 
 
+uint8_t okFrame[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0 },
+  { 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+uint8_t koFrame[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0 },
+  { 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0 },
+  { 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 
 
 void setup() {
@@ -26,6 +50,8 @@ void setup() {
 
   // Create serial connection and wait for it to become available.
   Serial.begin(9600);
+  
+  matrix.begin();
   while (!Serial) {
     ; 
   }
@@ -50,7 +76,7 @@ void setup() {
   if (!mqttClient.connect(broker, port)) {
     Serial.print("MQTT connection failed! Error code = ");
     Serial.println(mqttClient.connectError());
-
+     matrix.renderBitmap(koFrame, 8, 12);
     while (1);
   }
 
@@ -64,9 +90,10 @@ void setup() {
 
   // topics can be unsubscribed using:
   // mqttClient.unsubscribe(topic);
-  //mqttClient.setCallback(callback);
+  
   Serial.print("Waiting for messages on topic: ");
   Serial.println(subscribe_topic);
+  matrix.renderBitmap(okFrame, 8, 12);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -115,7 +142,7 @@ void loop() {
 
   // send message, the Print interface can be used to set the message contents
  
-  delay(3000);
+  delay(500);
  
 
 }
