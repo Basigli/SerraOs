@@ -1,12 +1,11 @@
-
 #include "WiFiS3.h"
 #include <ArduinoMqttClient.h>
 
-char ssid[] = "xxx";    // your network SSID (name)
-char pass[] = "yyy";    // your network password 
+char ssid[] = "Vodafone-34913283";    // your network SSID (name)
+char pass[] = "cj4e6ma26yeh22t";    // your network password 
 
-char mqtt_user[] = "admin";
-char mqtt_pass[] = "pass";
+//char mqtt_user[] = "admin";
+//char mqtt_pass[] = "pass";
 
 
 WiFiClient wifiClient;
@@ -14,7 +13,7 @@ MqttClient mqttClient(wifiClient);
 
 const char broker[] = "192.168.1.22"; //IP address of the EMQX broker.
 int        port     = 1883;
-const char publish_topic[]  = "1.TerrainHumidity";
+const char publish_topic[]  = "1/TerrainHumidity";
 
 const int sensorPin = A0;
 
@@ -28,7 +27,7 @@ void setup() {
   Serial.println(ssid);
   while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
     // failed, retry
-    Serial.print(".");
+    Serial.print("."); 
     delay(5000);
   }
 
@@ -36,7 +35,7 @@ void setup() {
   Serial.println();
 
   // You can provide a username and password for authentication
-  mqttClient.setUsernamePassword(mqtt_user, mqtt_pass);
+  //mqttClient.setUsernamePassword(mqtt_user, mqtt_pass);
 
   Serial.print("Attempting to connect to the MQTT broker.");
 
@@ -56,7 +55,7 @@ void loop() {
 
   // Map the sensor value to a moisture percentage (adjust min and max values as needed)
   int moisturePercentage = map(sensorValue, 0, 1023, 0, 100);
-
+  Serial.println(moisturePercentage);
   mqttClient.beginMessage(publish_topic);
   mqttClient.print(moisturePercentage);
   mqttClient.endMessage();

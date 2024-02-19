@@ -76,7 +76,7 @@ void setup() {
   if (!mqttClient.connect(broker, port)) {
     Serial.print("MQTT connection failed! Error code = ");
     Serial.println(mqttClient.connectError());
-     matrix.renderBitmap(koFrame, 8, 12);
+    matrix.renderBitmap(koFrame, 8, 12);
     while (1);
   }
 
@@ -139,7 +139,7 @@ void loop() {
     
     Serial.println();
   }
-
+  
   // send message, the Print interface can be used to set the message contents
  
   delay(500);
