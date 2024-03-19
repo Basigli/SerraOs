@@ -66,7 +66,7 @@ void setup() {
 void setClock() {
   int h = convert(compileTIME[0], compileTIME[1]);
   int m = convert(compileTIME[3], compileTIME[4]);
-  int s= convert(compileTIME[6], compileTIME[7]);
+  int s = convert(compileTIME[6], compileTIME[7]);
   RTC.setDS1302Time(s, m, h, 6, 3, 10, 2020);     // seconds, minutes, hours, day of the week, day of the month, month, year
   }
   int convert(char a, char b) {
@@ -372,7 +372,7 @@ void OS(){
       Display();
       SerialMonitor();
       }
- 
+  
   illuminazione();
   TempHum();
   Irrigazione();

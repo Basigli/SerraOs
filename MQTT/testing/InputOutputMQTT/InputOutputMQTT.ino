@@ -2,10 +2,13 @@
 #include "Arduino_LED_Matrix.h"
 #include <ArduinoMqttClient.h>
 #include <EEPROM.h>
+#include <SimpleDHT.h>
 
 // functions signatures
 char* concatenateTopics(const char* arduinoId, const char* topic);
 void generateRandomString(char *str, int length);
+void handleSensor(int sensorPin, char *topic, bool isPerc, bool reversed, int lowerBound, int upperBound);
+void handleDHTSensor(int sensorPin);
 // --------------------
 // WIFI and MQTT settings -----------------------------
 char ssid[] = "Vodafone-34913283";    // your network SSID (name)
@@ -20,6 +23,7 @@ struct ArduinoSettings {
 };
 
 #define EEPROM_SIZE sizeof(ArduinoSettings)
+
 const int EEPROM_ADDRESS = 0;
 const char broker[] = "192.168.1.22"; //IP address of the EMQX broker.
 int        port     = 1883;
@@ -38,9 +42,12 @@ char *publishAirHumidity;
 // --------------
 // ----------------------------------------------------
 
+// ------------ obj ---------------------
 WiFiClient wifiClient;
 ArduinoLEDMatrix matrix;
 MqttClient mqttClient(wifiClient);
+SimpleDHT11 dht11;
+// --------------------------------------
 
 uint8_t okFrame[8][12] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -67,11 +74,18 @@ uint8_t koFrame[8][12] = {
 unsigned long time1, deltaTime1;
 int executeEvery = 5000;
 
+// Sensors pin 
+const int terrainHumidityPin = A0;
+const int airHumidityTemperaturePin = 7;
+const int lightQuantityPin = A3;
+
 void setup() {
   Serial.begin(9600);
   matrix.begin();
   randomSeed(analogRead(0));
-
+  pinMode(terrainHumidityPin, INPUT);
+  pinMode(airHumidityTemperaturePin, INPUT);
+  pinMode(lightQuantityPin, INPUT);
   // Read data from EEPROM
   Serial.println("Reading data from EEPROM");
   ArduinoSettings readSettings;
@@ -215,15 +229,40 @@ bool checkEEPROM() {
 }
 
 
+
+void handleSensor(int sensorPin, char *topic, bool isPerc, bool reversed, int lowerBound, int upperBound) {
+  // Read the analog value from the sensor
+  int sensorValue = analogRead(sensorPin);
+  // Map the sensor value to a percentage
+  if (isPerc) {
+    if (reversed) {
+      sensorValue = map(sensorValue, lowerBound, upperBound, 100, 0);
+    } else {
+      sensorValue = map(sensorValue, lowerBound, upperBound, 0, 100);
+    }
+  }
+  sendMQTTMessage(topic, sensorValue);
+}
+
+void handleDHTSensor(int sensorPin) {
+  int err = SimpleDHTErrSuccess;
+  byte airTemperature = 0;
+  byte airHumidity = 0;
+  if ((err = dht11.read(sensorPin, &airTemperature, &airHumidity, NULL)) != SimpleDHTErrSuccess){
+    return;
+  }
+  sendMQTTMessage(publishAirTemperature, airTemperature);
+  sendMQTTMessage(publishAirHumidity, airHumidity);
+}
+
 void loop() {
   deltaTime1 = millis() - time1;
   if (deltaTime1 > executeEvery) {
     time1 = millis();
-    sendMQTTMessage(publishTerrainHumidity, 10);
-    sendMQTTMessage(publishLightQuantity, 20);
+    handleSensor(terrainHumidityPin, publishTerrainHumidity, true, true, 349, 783);
+    handleDHTSensor(airHumidityTemperaturePin);
+    handleSensor(lightQuantityPin, publishLightQuantity, true, false, 0, 1023);
     sendMQTTMessage(publishIsTankEmpty, 0);
-    sendMQTTMessage(publishAirTemperature, 40);
-    sendMQTTMessage(publishAirHumidity, 50);
   }
   mqttClient.poll();
 }
