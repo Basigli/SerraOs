@@ -79,6 +79,9 @@ const int terrainHumidityPin = A0;
 const int airHumidityTemperaturePin = 7;
 const int lightQuantityPin = A3;
 
+// Actuators pin
+const int irrigationPumpPin = 12;
+
 void setup() {
   Serial.begin(9600);
   matrix.begin();
@@ -86,7 +89,11 @@ void setup() {
   pinMode(terrainHumidityPin, INPUT);
   pinMode(airHumidityTemperaturePin, INPUT);
   pinMode(lightQuantityPin, INPUT);
-  // Read data from EEPROM
+  pinMode(irrigationPumpPin, OUTPUT);
+
+  digitalWrite(irrigationPumpPin, HIGH)
+
+  // Reading data from EEPROM
   Serial.println("Reading data from EEPROM");
   ArduinoSettings readSettings;
   EEPROM.get(EEPROM_ADDRESS, readSettings);
@@ -187,19 +194,51 @@ void sendMQTTMessage(const char* topic, int message) {
 
 void onMqttMessage(int messageSize) {
   // we received a message, print out the topic and contents
+  //char message[messageSize + 1];
   Serial.println("Received a message with topic '");
   Serial.print(mqttClient.messageTopic());
   Serial.print("', length ");
   Serial.print(messageSize);
   Serial.println(" bytes:");
-
   // use the Stream interface to print the contents
-  while (mqttClient.available()) {
-    Serial.print((char)mqttClient.read());
-  }
+  int i = 0;
+  //while (mqttClient.available()) {
+    //Serial.print((char)mqttClient.read());
+  //  message[i] = (char)mqttClient.read();
+  //  i++;
+  //}
+  //message[i] = '\0';
+
+  //Serial.print(message);
   Serial.println();
 
   Serial.println();
+
+  switch (String(mqttClient.messageTopic())) {
+    case subscribeIrrigationPump:
+      char inChar;
+      inChar = (char)mqttClient.read();
+      Serial.print((char)mqttClient.read());
+      bool value = false;
+
+      if (inChar == '1') {
+        Serial.println("turning on irrigation pump...");
+        value = true;
+      }
+      if (inChar == '0') {
+        Serial.println("turning off irrigation pump...");
+        value = false;
+      }
+      digitalWrite(irrigationPumpPin, !value)
+      break;
+    case subscribeUVLight:
+      // statements
+      break;
+    case subscribeVentilation:
+      // statements
+    default:
+      // statements
+  }
 }
 
 char* concatenateTopics(const char* arduinoId, const char* topic) {
