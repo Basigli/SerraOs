@@ -91,7 +91,7 @@ void setup() {
   pinMode(lightQuantityPin, INPUT);
   pinMode(irrigationPumpPin, OUTPUT);
 
-  digitalWrite(irrigationPumpPin, HIGH)
+  digitalWrite(irrigationPumpPin, LOW);
 
   // Reading data from EEPROM
   Serial.println("Reading data from EEPROM");
@@ -213,32 +213,28 @@ void onMqttMessage(int messageSize) {
   Serial.println();
 
   Serial.println();
+  bool value = false;
 
-  switch (String(mqttClient.messageTopic())) {
-    case subscribeIrrigationPump:
-      char inChar;
-      inChar = (char)mqttClient.read();
-      Serial.print((char)mqttClient.read());
-      bool value = false;
+  if (String(mqttClient.messageTopic()).equals(subscribeIrrigationPump)) {
+    char inChar;
+    inChar = (char)mqttClient.read();
+    Serial.print((char)mqttClient.read());
+    
 
-      if (inChar == '1') {
-        Serial.println("turning on irrigation pump...");
-        value = true;
-      }
-      if (inChar == '0') {
-        Serial.println("turning off irrigation pump...");
-        value = false;
-      }
-      digitalWrite(irrigationPumpPin, !value)
-      break;
-    case subscribeUVLight:
-      // statements
-      break;
-    case subscribeVentilation:
-      // statements
-    default:
-      // statements
+    if (inChar == '1') {
+      Serial.println("turning on irrigation pump...");
+      value = true;
+    }
+    if (inChar == '0') {
+      Serial.println("turning off irrigation pump...");
+      value = false;
+    }
+    digitalWrite(irrigationPumpPin, value);
   }
+
+
+
+  
 }
 
 char* concatenateTopics(const char* arduinoId, const char* topic) {
