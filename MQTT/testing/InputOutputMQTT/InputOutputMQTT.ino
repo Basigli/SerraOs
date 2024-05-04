@@ -9,6 +9,7 @@ char* concatenateTopics(const char* arduinoId, const char* topic);
 void generateRandomString(char *str, int length);
 void handleSensor(int sensorPin, char *topic, bool isPerc, bool reversed, int lowerBound, int upperBound);
 void handleDHTSensor(int sensorPin);
+void connectToWifiAndBroker();
 // --------------------
 // WIFI and MQTT settings -----------------------------
 char ssid[] = "Vodafone-34913283";    // your network SSID (name)
@@ -47,6 +48,7 @@ WiFiClient wifiClient;
 ArduinoLEDMatrix matrix;
 MqttClient mqttClient(wifiClient);
 SimpleDHT11 dht11;
+ArduinoSettings readSettings;
 // --------------------------------------
 
 uint8_t okFrame[8][12] = {
@@ -95,7 +97,7 @@ void setup() {
 
   // Reading data from EEPROM
   Serial.println("Reading data from EEPROM");
-  ArduinoSettings readSettings;
+ 
   EEPROM.get(EEPROM_ADDRESS, readSettings);
   Serial.print("ssid: ");
   Serial.println(readSettings.ssid);
@@ -142,44 +144,8 @@ void setup() {
   publishIsTankEmpty = concatenateTopics(readSettings.arduinoId, "/IsTankEmpty");
   publishAirTemperature = concatenateTopics(readSettings.arduinoId, "/AirTemperature");
   publishAirHumidity = concatenateTopics(readSettings.arduinoId, "/AirHumidity");
-  // Connect to WiFi
-  Serial.print("Attempting to connect to WPA SSID: ");
-  Serial.println(ssid);
-  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
-    // failed, retry
-    Serial.print("."); 
-    delay(5000);
-  }
 
-  Serial.println("You're connected to the network");
-  Serial.println();
-  Serial.print("Attempting to connect to the MQTT broker.");
-
-  if (!mqttClient.connect(broker, port)) {
-    Serial.print("MQTT connection failed! Error code = ");
-    Serial.println(mqttClient.connectError());
-    matrix.renderBitmap(koFrame, 8, 12);
-    while (1);
-  }
-
-  Serial.println("You're connected to the MQTT broker!");
-  // topic sub
-  Serial.print("Subscribing to topic: ");
-  Serial.println(subscribeIrrigationPump);
-  mqttClient.subscribe(subscribeIrrigationPump);
-  
-  Serial.print("Subscribing to topic: ");
-  Serial.println(subscribeUVLight);
-  mqttClient.subscribe(subscribeUVLight);
-  
-  Serial.print("Subscribing to topic: ");
-  Serial.println(subscribeVentilation);
-  mqttClient.subscribe(subscribeVentilation);
-  
-  // set the message receive callback
-  mqttClient.onMessage(onMqttMessage);
-
-  matrix.renderBitmap(okFrame, 8, 12);
+  connectToWifiAndBroker();
 }
 
 void sendMQTTMessage(const char* topic, int message) {
@@ -290,10 +256,58 @@ void handleDHTSensor(int sensorPin) {
   sendMQTTMessage(publishAirHumidity, airHumidity);
 }
 
+
+void connectToWifiAndBroker() {
+  Serial.print("Attempting to connect to WPA SSID: ");
+  Serial.println(ssid);
+  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
+    // failed, retry
+    Serial.print("."); 
+    delay(5000);
+  }
+
+  Serial.println("You're connected to the network");
+  Serial.println();
+  Serial.print("Attempting to connect to the MQTT broker.");
+
+  if (!mqttClient.connect(broker, port)) {
+    Serial.print("MQTT connection failed! Error code = ");
+    Serial.println(mqttClient.connectError());
+    matrix.renderBitmap(koFrame, 8, 12);
+    while (1);
+  }
+
+  Serial.println("You're connected to the MQTT broker!");
+  // topic sub
+  Serial.print("Subscribing to topic: ");
+  Serial.println(subscribeIrrigationPump);
+  mqttClient.subscribe(subscribeIrrigationPump);
+  
+  Serial.print("Subscribing to topic: ");
+  Serial.println(subscribeUVLight);
+  mqttClient.subscribe(subscribeUVLight);
+  
+  Serial.print("Subscribing to topic: ");
+  Serial.println(subscribeVentilation);
+  mqttClient.subscribe(subscribeVentilation);
+  
+  // set the message receive callback
+  mqttClient.onMessage(onMqttMessage);
+
+  matrix.renderBitmap(okFrame, 8, 12);
+
+}
+
+
 void loop() {
   deltaTime1 = millis() - time1;
   if (deltaTime1 > executeEvery) {
     time1 = millis();
+    int attempts = 0;
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Connection lost...");
+      connectToWifiAndBroker();
+    }
     handleSensor(terrainHumidityPin, publishTerrainHumidity, true, true, 349, 783);
     handleDHTSensor(airHumidityTemperaturePin);
     handleSensor(lightQuantityPin, publishLightQuantity, true, false, 0, 1023);
