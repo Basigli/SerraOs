@@ -12,8 +12,8 @@ void handleDHTSensor(int sensorPin);
 void connectToWifiAndBroker();
 // --------------------
 // WIFI and MQTT settings -----------------------------
-char ssid[] = "Vodafone-34913283";    // your network SSID (name)
-char pass[] = "cj4e6ma26yeh22t";    // your network password 
+char ssid[] = "XXXX";    // your network SSID (name)
+char pass[] = "YYYY";    // your network password 
 
 struct ArduinoSettings {
   char ssid[32]; //  your network SSID (name)
@@ -258,23 +258,29 @@ void handleDHTSensor(int sensorPin) {
 
 
 void connectToWifiAndBroker() {
+  int attempts = 0;
   Serial.print("Attempting to connect to WPA SSID: ");
   Serial.println(ssid);
   while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
     // failed, retry
     Serial.print("."); 
-    delay(5000);
+    delay(100);
+    attempts++;
+    if (attempts > 100) {
+      delay(1000);
+      NVIC_SystemReset(); 
+    }
   }
 
   Serial.println("You're connected to the network");
   Serial.println();
   Serial.print("Attempting to connect to the MQTT broker.");
 
-  if (!mqttClient.connect(broker, port)) {
+  while (!mqttClient.connect(broker, port)) {
     Serial.print("MQTT connection failed! Error code = ");
     Serial.println(mqttClient.connectError());
     matrix.renderBitmap(koFrame, 8, 12);
-    while (1);
+    delay(1000);
   }
 
   Serial.println("You're connected to the MQTT broker!");
