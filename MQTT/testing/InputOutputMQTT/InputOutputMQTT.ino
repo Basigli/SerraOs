@@ -3,12 +3,14 @@
 #include <ArduinoMqttClient.h>
 #include <EEPROM.h>
 #include <SimpleDHT.h>
+#include <SHT1x-ESP.h>
 
 // functions signatures
 char* concatenateTopics(const char* arduinoId, const char* topic);
 void generateRandomString(char *str, int length);
 void handleSensor(int sensorPin, char *topic, bool isPerc, bool reversed, int lowerBound, int upperBound);
 void handleDHTSensor(int sensorPin);
+void handleSHTSensor();
 void connectToWifiAndBroker();
 // --------------------
 // WIFI and MQTT settings -----------------------------
@@ -43,13 +45,7 @@ char *publishAirHumidity;
 // --------------
 // ----------------------------------------------------
 
-// ------------ obj ---------------------
-WiFiClient wifiClient;
-ArduinoLEDMatrix matrix;
-MqttClient mqttClient(wifiClient);
-SimpleDHT11 dht11;
-ArduinoSettings readSettings;
-// --------------------------------------
+
 
 uint8_t okFrame[8][12] = {
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -77,18 +73,28 @@ unsigned long time1, deltaTime1;
 int executeEvery = 5000;
 
 // Sensors pin 
-const int terrainHumidityPin = A0;
+const int terraineHumidityTemperaturPin = 10;
+const int clockPin = 11;
 const int airHumidityTemperaturePin = 7;
 const int lightQuantityPin = A3;
 
 // Actuators pin
 const int irrigationPumpPin = 12;
 
+// ------------ obj ---------------------
+WiFiClient wifiClient;
+ArduinoLEDMatrix matrix;
+MqttClient mqttClient(wifiClient);
+SimpleDHT11 dht11;
+ArduinoSettings readSettings;
+SHT1x sht1x(terraineHumidityTemperaturPin, clockPin);
+// --------------------------------------
+
 void setup() {
   Serial.begin(9600);
   matrix.begin();
   randomSeed(analogRead(0));
-  pinMode(terrainHumidityPin, INPUT);
+  pinMode(terraineHumidityTemperaturPin, INPUT);
   pinMode(airHumidityTemperaturePin, INPUT);
   pinMode(lightQuantityPin, INPUT);
   pinMode(irrigationPumpPin, OUTPUT);
@@ -257,6 +263,15 @@ void handleDHTSensor(int sensorPin) {
 }
 
 
+void handleSHTSensor() {
+  float terrainHumidity, terrainTemperature;
+
+  terrainHumidity = sht1x.readHumidity();
+  terrainTemperature = sht1x.readTemperatureC();
+  sendMQTTMessage(publishTerrainHumidity, terrainHumidity);
+}
+
+
 void connectToWifiAndBroker() {
   int attempts = 0;
   Serial.print("Attempting to connect to WPA SSID: ");
@@ -314,7 +329,7 @@ void loop() {
       Serial.println("Connection lost...");
       connectToWifiAndBroker();
     }
-    handleSensor(terrainHumidityPin, publishTerrainHumidity, true, true, 349, 783);
+    handleSHTSensor();
     handleDHTSensor(airHumidityTemperaturePin);
     handleSensor(lightQuantityPin, publishLightQuantity, true, false, 0, 1023);
     sendMQTTMessage(publishIsTankEmpty, 0);
