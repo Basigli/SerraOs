@@ -80,6 +80,8 @@ const int lightQuantityPin = A3;
 
 // Actuators pin
 const int irrigationPumpPin = 12;
+const int ventilationPin = 6;
+const int uvLightPin = 5;
 
 // ------------ obj ---------------------
 WiFiClient wifiClient;
@@ -98,6 +100,9 @@ void setup() {
   pinMode(airHumidityTemperaturePin, INPUT);
   pinMode(lightQuantityPin, INPUT);
   pinMode(irrigationPumpPin, OUTPUT);
+  pinMode(ventilationPin, OUTPUT);
+  pinMode(uvLightPin, OUTPUT);
+
 
   digitalWrite(irrigationPumpPin, LOW);
 
@@ -155,10 +160,10 @@ void setup() {
 }
 
 void sendMQTTMessage(const char* topic, int message) {
-  //Serial.print("Publishing the following message at topic ");
-  //Serial.print(topic);
-  //Serial.println(": ");
-  //Serial.println(message);
+  Serial.print("Publishing the following message at topic ");
+  Serial.print(topic);
+  Serial.println(": ");
+  Serial.println(message);
   mqttClient.beginMessage(topic);
   mqttClient.print(message);
   mqttClient.endMessage();
@@ -166,48 +171,46 @@ void sendMQTTMessage(const char* topic, int message) {
 
 void onMqttMessage(int messageSize) {
   // we received a message, print out the topic and contents
-  //char message[messageSize + 1];
   Serial.println("Received a message with topic '");
   Serial.print(mqttClient.messageTopic());
   Serial.print("', length ");
   Serial.print(messageSize);
   Serial.println(" bytes:");
   // use the Stream interface to print the contents
-  int i = 0;
-  //while (mqttClient.available()) {
-    //Serial.print((char)mqttClient.read());
-  //  message[i] = (char)mqttClient.read();
-  //  i++;
-  //}
-  //message[i] = '\0';
-
-  //Serial.print(message);
+  Serial.println();
   Serial.println();
 
-  Serial.println();
-  bool value = false;
-
-  if (String(mqttClient.messageTopic()).equals(subscribeIrrigationPump)) {
-    char inChar;
-    inChar = (char)mqttClient.read();
-    Serial.print((char)mqttClient.read());
-    
-
-    if (inChar == '1') {
-      Serial.println("turning on irrigation pump...");
-      value = true;
-    }
-    if (inChar == '0') {
-      Serial.println("turning off irrigation pump...");
-      value = false;
-    }
-    digitalWrite(irrigationPumpPin, value);
-  }
-
-
-
+  char inChar = (char)mqttClient.read();
   
+  struct TopicPinMapping {
+    const char* topic;
+    int pin;
+  };
+
+  // Define the mapping between topics and pins
+  TopicPinMapping mappings[] = {
+    {subscribeIrrigationPump, irrigationPumpPin},
+    {subscribeUVLight, uvLightPin},
+    {subscribeVentilation, ventilationPin}
+  };
+
+  // Determine the state based on the message content
+  bool value = (inChar == '1');
+  const char* action = value ? "turning on" : "turning off";
+
+  // Iterate over the mappings to find the matching topic
+  for (const auto& mapping : mappings) {
+    if (mqttClient.messageTopic().equals(mapping.topic)) {
+      Serial.print(action);
+      Serial.print(" ");
+      Serial.print(mapping.topic);
+      Serial.println("...");
+      digitalWrite(mapping.pin, value);
+      break;
+    }
+  }
 }
+
 
 char* concatenateTopics(const char* arduinoId, const char* topic) {
   size_t len = strlen(arduinoId) + strlen(topic) + 1; 
@@ -216,6 +219,7 @@ char* concatenateTopics(const char* arduinoId, const char* topic) {
   strcat(result, topic);
   return result;
 }
+
 
 void generateRandomString(char *str, int length) {
   static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -226,6 +230,7 @@ void generateRandomString(char *str, int length) {
   str[length] = '\0'; 
 }
 
+
 bool checkEEPROM() {
   for (int i = 0; i < EEPROM_SIZE; i++) {
     if (EEPROM.read(i) != 255) {  // empty EEPROM contains values  255
@@ -234,7 +239,6 @@ bool checkEEPROM() {
   }
   return true;  
 }
-
 
 
 void handleSensor(int sensorPin, char *topic, bool isPerc, bool reversed, int lowerBound, int upperBound) {
@@ -314,7 +318,6 @@ void connectToWifiAndBroker() {
   
   // set the message receive callback
   mqttClient.onMessage(onMqttMessage);
-
   matrix.renderBitmap(okFrame, 8, 12);
 
 }
