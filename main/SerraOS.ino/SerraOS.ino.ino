@@ -14,8 +14,7 @@ void handleSHTSensor();
 void connectToWifiAndBroker();
 // --------------------
 // WIFI and MQTT settings -----------------------------
-char ssid[] = "XXXX";    // your network SSID (name)
-char pass[] = "YYYY";    // your network password 
+
 
 struct ArduinoSettings {
   char ssid[32]; //  your network SSID (name)
@@ -73,7 +72,7 @@ unsigned long time1, deltaTime1;
 int executeEvery = 5000;
 
 // Sensors pin 
-const int terraineHumidityTemperaturPin = 10;
+const int terraineHumidityTemperaturePin = 10;
 const int clockPin = 11;
 const int airHumidityTemperaturePin = 7;
 const int lightQuantityPin = A3;
@@ -89,14 +88,14 @@ ArduinoLEDMatrix matrix;
 MqttClient mqttClient(wifiClient);
 SimpleDHT11 dht11;
 ArduinoSettings readSettings;
-SHT1x sht1x(terraineHumidityTemperaturPin, clockPin);
+SHT1x sht1x(terraineHumidityTemperaturePin, clockPin);
 // --------------------------------------
 
 void setup() {
   Serial.begin(9600);
   matrix.begin();
   randomSeed(analogRead(0));
-  pinMode(terraineHumidityTemperaturPin, INPUT);
+  pinMode(terraineHumidityTemperaturePin, INPUT);
   pinMode(airHumidityTemperaturePin, INPUT);
   pinMode(lightQuantityPin, INPUT);
   pinMode(irrigationPumpPin, OUTPUT);
@@ -279,8 +278,8 @@ void handleSHTSensor() {
 void connectToWifiAndBroker() {
   int attempts = 0;
   Serial.print("Attempting to connect to WPA SSID: ");
-  Serial.println(ssid);
-  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
+  Serial.println(readSettings.password);
+  while (WiFi.begin(readSettings.password, readSettings.password) != WL_CONNECTED) {
     // failed, retry
     Serial.print("."); 
     delay(100);
@@ -327,7 +326,6 @@ void loop() {
   deltaTime1 = millis() - time1;
   if (deltaTime1 > executeEvery) {
     time1 = millis();
-    int attempts = 0;
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("Connection lost...");
       connectToWifiAndBroker();
