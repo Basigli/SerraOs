@@ -327,6 +327,7 @@ void loop() {
   if (deltaTime1 > executeEvery) {
     time1 = millis();
     if (WiFi.status() != WL_CONNECTED) {
+      digitalWrite(irrigationPumpPin, LOW);
       Serial.println("Connection lost...");
       connectToWifiAndBroker();
     }
