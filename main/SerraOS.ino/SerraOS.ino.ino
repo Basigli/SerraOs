@@ -72,7 +72,7 @@ unsigned long time1, deltaTime1;
 int executeEvery = 5000;
 
 // Sensors pin 
-const int terraineHumidityTemperaturePin = 10;
+const int terrainHumidityTemperaturePin = 10;
 const int clockPin = 11;
 const int airHumidityTemperaturePin = 7;
 const int lightQuantityPin = A3;
@@ -88,14 +88,14 @@ ArduinoLEDMatrix matrix;
 MqttClient mqttClient(wifiClient);
 SimpleDHT11 dht11;
 ArduinoSettings readSettings;
-SHT1x sht1x(terraineHumidityTemperaturePin, clockPin);
+SHT1x sht1x(terrainHumidityTemperaturePin, clockPin);
 // --------------------------------------
 
 void setup() {
   Serial.begin(9600);
   matrix.begin();
   randomSeed(analogRead(0));
-  pinMode(terraineHumidityTemperaturePin, INPUT);
+  pinMode(terrainHumidityTemperaturePin, INPUT);
   pinMode(airHumidityTemperaturePin, INPUT);
   pinMode(lightQuantityPin, INPUT);
   pinMode(irrigationPumpPin, OUTPUT);
