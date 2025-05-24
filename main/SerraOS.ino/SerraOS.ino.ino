@@ -104,7 +104,18 @@ void setup() {
 
 
   digitalWrite(irrigationPumpPin, LOW);
+  
+  ArduinoSettings deafultArduinoSettings;
+  strcpy(deafultArduinoSettings.ssid, "XXX");
+  strcpy(deafultArduinoSettings.password, "XXX");
+  strcpy(deafultArduinoSettings.arduinoId , "XXX");
+  deafultArduinoSettings.keepWifiSettings = true;
+  deafultArduinoSettings.keepArduinoId = true;
 
+  if (checkEEPROM()) {
+    Serial.println("No data on EEPROM");
+    EEPROM.put(EEPROM_ADDRESS, deafultArduinoSettings);
+  }
   // Reading data from EEPROM
   Serial.println("Reading data from EEPROM");
  
@@ -120,17 +131,7 @@ void setup() {
   Serial.print("keepArduinoId: ");
   Serial.println(readSettings.keepArduinoId);
 
-  ArduinoSettings deafultArduinoSettings;
-  strcpy(deafultArduinoSettings.ssid, "XXX");
-  strcpy(deafultArduinoSettings.password, "XXX");
-  strcpy(deafultArduinoSettings.arduinoId , "XXX");
-  deafultArduinoSettings.keepWifiSettings = true;
-  deafultArduinoSettings.keepArduinoId = true;
-
-  if (checkEEPROM()) {
-    Serial.println("No data on EEPROM");
-    EEPROM.put(EEPROM_ADDRESS, deafultArduinoSettings);
-  }
+  
   bool needSave = false;      // change this variable to true if you want to save new settings on EEPROM
   if ((strcmp(readSettings.ssid, "XXX") == 0) || (strcmp(readSettings.password, "XXX") == 0) || (!readSettings.keepWifiSettings)) {
     // ask wifi name and password
