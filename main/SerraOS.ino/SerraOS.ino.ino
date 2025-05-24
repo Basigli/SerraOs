@@ -104,7 +104,7 @@ void setup() {
 
 
   digitalWrite(irrigationPumpPin, LOW);
-  
+
   ArduinoSettings deafultArduinoSettings;
   strcpy(deafultArduinoSettings.ssid, "XXX");
   strcpy(deafultArduinoSettings.password, "XXX");
@@ -279,8 +279,8 @@ void handleSHTSensor() {
 void connectToWifiAndBroker() {
   int attempts = 0;
   Serial.print("Attempting to connect to WPA SSID: ");
-  Serial.println(readSettings.password);
-  while (WiFi.begin(readSettings.password, readSettings.password) != WL_CONNECTED) {
+  Serial.println(readSettings.ssid);
+  while (WiFi.begin(readSettings.ssid, readSettings.password) != WL_CONNECTED) {
     // failed, retry
     Serial.print("."); 
     delay(100);
